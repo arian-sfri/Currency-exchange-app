@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  esbuild: { jsx: 'automatic' },
   server: {
     // Forward API calls to the Express backend during development
     proxy: {
