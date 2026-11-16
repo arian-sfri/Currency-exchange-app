@@ -128,4 +128,5 @@ All errors are JSON with an `error` field.
 
 ## AI Usage
 I used AI tools mainly to help write the test suite. I described the scenarios and edge cases I wanted covered, and the AI generated the test cases.
+
 This saved significant time on repetitive test writing and let me build a comprehensive suite of 152 tests quickly. I then ran the tests, fixed the failures, and reviewed the results to make sure they were correct.

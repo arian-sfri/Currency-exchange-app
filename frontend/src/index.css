@@ -1,0 +1,53 @@
+:root {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light dark;
+
+  --bg-from: #e0e7ff;
+  --bg-to: #fce7f3;
+  --surface: #ffffff;
+  --surface-alt: #f3f4f8;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+  --error-bg: #fef2f2;
+  --error-text: #b91c1c;
+  --shadow: 0 20px 45px -15px rgba(79, 70, 229, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-from: #1e1b4b;
+    --bg-to: #312e81;
+    --surface: #1f2937;
+    --surface-alt: #111827;
+    --text: #f3f4f6;
+    --text-muted: #9ca3af;
+    --border: #374151;
+    --accent: #818cf8;
+    --accent-hover: #6366f1;
+    --accent-soft: #312e81;
+    --error-bg: #450a0a;
+    --error-text: #fca5a5;
+    --shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.6);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  color: var(--text);
+  background: linear-gradient(135deg, var(--bg-from), var(--bg-to));
+  background-attachment: fixed;
+}
