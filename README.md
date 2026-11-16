@@ -2,12 +2,14 @@
 
 A small REST API that converts monetary amounts between currencies using static exchange rates. Built with Node.js and Express.
 
+An optional React frontend is available as well but the REST API can be ran and tested separately.
+
 ## Prequisites
 
 - Node.js 20 or newer (`node -v` to check)
 - npm
 
-## Getting started
+## Getting started (API/backend)
 
 ```bash
 cd backend
@@ -39,6 +41,17 @@ Tests use [Jest](https://jestjs.io/) and [Supertest](https://github.com/ladjs/su
 - `tests/converter.test.js`: conversion logic (all currency pairs, rounding, case handling, unsupported currencies)
 - `tests/validate.test.js`: request validation
 - `tests/api.test.js`: HTTP (status codes, response shapes, errors)
+
+### Frontend Setup + Testing
+
+```bash
+cd frontend
+npm install
+npm test
+```
+
+Tests use [Vitest](https://vitest.dev/) and React Testing Library, with
+`fetch` mocked so no backend needs to be running.
 
 ## Exchange rates
 
@@ -115,6 +128,36 @@ All errors are JSON with an `error` field.
 | 413 | Request body over 10 KB | `{ "error": "Request body too large" }` |
 | 500 | Unexpected error | `{ "error": "Internal server error" }` |
 
+## Frontend (optional)
+
+A small React + Vite UI is included in `frontend/`. The API works
+standalone; the frontend is an optional extra and is not required to use or
+test the API.
+
+Features: currency dropdowns loaded from `GET /currencies`, a swap button,
+loading and error states, and automatic dark mode.
+
+### Running the full app
+
+Terminal 1 (backend):
+
+```bash
+cd backend
+npm install
+npm start
+```
+
+Terminal 2 (frontend):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173. The Vite dev server proxies `/convert` and
+`/currencies` to the backend on port 3000, so the backend must be running.
+
 ## Assumptions and design decisions
 
 - **Rounding:** `convertedAmount` is rounded to 2 decimal places, calculated from the unrounded rate so errors do not compound. `exchangeRate` is rounded to 6 decimal places. JPY is also kept to 2 decimals for consistency.
@@ -125,8 +168,10 @@ All errors are JSON with an `error` field.
 - **Validation and conversion is separate:** `validate.js` checks that the request is well-formed; `converter.js` checks that currencies are supported.
 - **Static rates:** rates live in `src/rates.js`. No external service or database is used.
 - **No stack traces** are returned to clients on unexpected errors.
+- **Frontend is separate:** `backend/` and `frontend/` have their own `package.json` and share no code.
 
 ## AI Usage
-I used AI tools mainly to help write the test suite. I described the scenarios and edge cases I wanted covered, and the AI generated the test cases.
+I used AI tools mainly to speed up repetitive work, in two areas:
 
-This saved significant time on repetitive test writing and let me build a comprehensive suite of 152 tests quickly. I then ran the tests, fixed the failures, and reviewed the results to make sure they were correct.
+- **Tests:** I described the scenarios and edge cases I wanted covered, and the AI generated the test cases. This let me build a comprehensive suite (152 backend tests and 11 frontend tests) in a fraction of the time it would take to write them by hand.
+- **Frontend:** I used AI to help build the React frontend, for similar reasons. It saved time on boilerplate, component structure, and styling, so I could focus on making sure the frontend worked correctly with the API.
