@@ -10,8 +10,11 @@ class UnsupportedCurrencyError extends Error {
 }
 
 function round(value, decimals) {
-    const factor = 10 ** decimals;
-    return Math.round((value + Number.EPSILON) * factor) / factor;
+  const sign = value < 0 ? -1 : 1;
+  const clean = Number(Math.abs(value).toPrecision(15));
+  const [mantissa, exp] = clean.toExponential().split('e');
+  const shifted = Math.round(Number(`${mantissa}e${Number(exp) + decimals}`));
+  return sign * Number(`${shifted}e${-decimals}`);
 }
 
 function normalizeCurrency(code) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './Converter.css';
 
 const CURRENCY_NAMES = {
@@ -18,6 +18,8 @@ export default function Converter() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const requestId = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +44,15 @@ export default function Converter() {
     };
   }, []);
 
+  // Any input change makes an in-flight request obsolete
+  function invalidateRequest() {
+    requestId.current += 1;
+    setResult(null);
+    setLoading(false);
+  }
+
   function handleSwap() {
+    invalidateRequest();
     setFrom(to);
     setTo(from);
   }
@@ -59,6 +69,7 @@ export default function Converter() {
       return;
     }
 
+    const id = ++requestId.current;
     setLoading(true);
     try {
       const res = await fetch('/convert', {
@@ -67,6 +78,7 @@ export default function Converter() {
         body: JSON.stringify({ from, to, amount: numericAmount }),
       });
       const data = await res.json();
+      if (id !== requestId.current) return; // inputs changed, ignore this response
 
       if (!res.ok) {
         setError(
@@ -76,9 +88,10 @@ export default function Converter() {
       }
       setResult(data);
     } catch {
+      if (id !== requestId.current) return;
       setError('Could not reach the server. Please try again.');
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }
 
@@ -106,14 +119,24 @@ export default function Converter() {
             inputMode="decimal"
             placeholder="0.00"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              invalidateRequest();
+              setAmount(e.target.value);
+            }}
           />
         </div>
 
         <div className="row">
           <div className="field">
             <label htmlFor="from">From</label>
-            <select id="from" value={from} onChange={(e) => setFrom(e.target.value)}>
+            <select
+              id="from"
+              value={from}
+              onChange={(e) => {
+                invalidateRequest();
+                setFrom(e.target.value);
+              }}
+            >
               {currencies.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -135,7 +158,14 @@ export default function Converter() {
 
           <div className="field">
             <label htmlFor="to">To</label>
-            <select id="to" value={to} onChange={(e) => setTo(e.target.value)}>
+            <select
+              id="to"
+              value={to}
+              onChange={(e) => {
+                invalidateRequest();
+                setTo(e.target.value);
+              }}
+            >
               {currencies.map((c) => (
                 <option key={c} value={c}>
                   {c}

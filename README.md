@@ -173,5 +173,5 @@ Open http://localhost:5173. The Vite dev server proxies `/convert` and
 ## AI Usage
 I used AI tools mainly to speed up repetitive work, in two areas:
 
-- **Tests:** I described the scenarios and edge cases I wanted covered, and the AI generated the test cases. This let me build a comprehensive suite (152 backend tests and 11 frontend tests) in a fraction of the time it would take to write them by hand.
+- **Tests:** I described the scenarios and edge cases I wanted covered, and the AI generated the test cases. This let me build a comprehensive suite (172 backend tests and 12 frontend tests) in a fraction of the time it would take to write them by hand.
 - **Frontend:** I used AI to help build the React frontend, for similar reasons. It saved time on boilerplate, component structure, and styling, so I could focus on making sure the frontend worked correctly with the API.

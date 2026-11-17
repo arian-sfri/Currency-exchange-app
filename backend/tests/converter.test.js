@@ -26,8 +26,8 @@ describe('convert', () => {
         });
     });
 
-    describe ('to CAD', () => {
-        test ('USD to CAD', () => {
+    describe('to CAD', () => {
+        test('USD to CAD', () => {
             const result = convert('USD', 'CAD', 100);
             expect(result.convertedAmount).toBe(138.89);
             expect(result.exchangeRate).toBe(1.388889);
@@ -37,122 +37,172 @@ describe('convert', () => {
         });
     });
 
-  describe('cross-currency (neither side is CAD)', () => {
-    test('EUR to JPY', () => {
-      const result = convert('EUR', 'JPY', 100);
-      expect(result.convertedAmount).toBe(16590.91);
-      expect(result.exchangeRate).toBe(165.909091);
+    describe('cross-currency (neither side is CAD)', () => {
+        test('EUR to JPY', () => {
+            const result = convert('EUR', 'JPY', 100);
+            expect(result.convertedAmount).toBe(16590.91);
+            expect(result.exchangeRate).toBe(165.909091);
+        });
+
+        test('GBP to AUD', () => {
+            const result = convert('GBP', 'AUD', 100);
+            expect(result.convertedAmount).toBe(191.23);
+            expect(result.exchangeRate).toBe(1.912281);
+        });
+
+        test('is consistent in both directions (round trip is close)', () => {
+            const there = convert('USD', 'EUR', 250);
+            const back = convert('EUR', 'USD', there.convertedAmount);
+            expect(back.convertedAmount).toBeCloseTo(250, 1);
+        });
     });
 
-    test('GBP to AUD', () => {
-      const result = convert('GBP', 'AUD', 100);
-      expect(result.convertedAmount).toBe(191.23);
-      expect(result.exchangeRate).toBe(1.912281);
+    describe('edge cases', () => {
+        test('same currency returns the same amount with rate 1', () => {
+            expect(convert('USD', 'USD', 50)).toEqual({
+                from: 'USD',
+                to: 'USD',
+                originalAmount: 50,
+                convertedAmount: 50,
+                exchangeRate: 1,
+            });
+        });
+
+        test('zero amount returns zero', () => {
+            expect(convert('CAD', 'USD', 0).convertedAmount).toBe(0);
+        });
+
+        test('rounds to 2 decimal places', () => {
+            // 19.99 * 0.72 = 14.3928
+            expect(convert('CAD', 'USD', 19.99).convertedAmount).toBe(14.39);
+        });
+
+        test('handles very small amounts', () => {
+            expect(convert('CAD', 'USD', 0.01).convertedAmount).toBe(0.01);
+        });
+
+        test('handles large amounts', () => {
+            expect(convert('CAD', 'JPY', 1000000).convertedAmount).toBe(109500000);
+        });
+
+        test('preserves the original amount unchanged', () => {
+            expect(convert('CAD', 'USD', 19.99).originalAmount).toBe(19.99);
+        });
     });
 
-    test('is consistent in both directions (round trip is close)', () => {
-      const there = convert('USD', 'EUR', 250);
-      const back = convert('EUR', 'USD', there.convertedAmount);
-      expect(back.convertedAmount).toBeCloseTo(250, 1);
-    });
-  });
+    describe('currency code handling', () => {
+        test('accepts lowercase codes and returns them uppercase', () => {
+            const result = convert('usd', 'eur', 100);
+            expect(result.from).toBe('USD');
+            expect(result.to).toBe('EUR');
+        });
 
-  describe('edge cases', () => {
-    test('same currency returns the same amount with rate 1', () => {
-      expect(convert('USD', 'USD', 50)).toEqual({
-        from: 'USD',
-        to: 'USD',
-        originalAmount: 50,
-        convertedAmount: 50,
-        exchangeRate: 1,
-      });
+        test('accepts mixed case and surrounding whitespace', () => {
+            expect(convert(' cAd ', 'Usd', 100).convertedAmount).toBe(72);
+        });
     });
 
-    test('zero amount returns zero', () => {
-      expect(convert('CAD', 'USD', 0).convertedAmount).toBe(0);
-    });
+    describe('unsupported currencies', () => {
+        test('throws for unknown "from" currency', () => {
+            expect(() => convert('XYZ', 'USD', 100)).toThrow(
+                UnsupportedCurrencyError
+            );
+        });
 
-    test('rounds to 2 decimal places', () => {
-      // 19.99 * 0.72 = 14.3928
-      expect(convert('CAD', 'USD', 19.99).convertedAmount).toBe(14.39);
-    });
+        test('throws for unknown "to" currency', () => {
+            expect(() => convert('USD', 'XYZ', 100)).toThrow(
+                UnsupportedCurrencyError
+            );
+        });
 
-    test('handles very small amounts', () => {
-      expect(convert('CAD', 'USD', 0.01).convertedAmount).toBe(0.01);
-    });
+        test('error message lists supported currencies', () => {
+            expect(() => convert('XYZ', 'USD', 100)).toThrow(
+                'Unsupported currency: XYZ. Supported currencies: CAD, USD, EUR, GBP, AUD, JPY'
+            );
+        });
 
-    test('handles large amounts', () => {
-      expect(convert('CAD', 'JPY', 1000000).convertedAmount).toBe(109500000);
+        test('does not treat object prototype keys as currencies', () => {
+            expect(() => convert('constructor', 'USD', 100)).toThrow(
+                UnsupportedCurrencyError
+            );
+            expect(() => convert('__proto__', 'USD', 100)).toThrow(
+                UnsupportedCurrencyError
+            );
+        });
     });
-
-    test('preserves the original amount unchanged', () => {
-      expect(convert('CAD', 'USD', 19.99).originalAmount).toBe(19.99);
-    });
-  });
-
-  describe('currency code handling', () => {
-    test('accepts lowercase codes and returns them uppercase', () => {
-      const result = convert('usd', 'eur', 100);
-      expect(result.from).toBe('USD');
-      expect(result.to).toBe('EUR');
-    });
-
-    test('accepts mixed case and surrounding whitespace', () => {
-      expect(convert(' cAd ', 'Usd', 100).convertedAmount).toBe(72);
-    });
-  });
-
-  describe('unsupported currencies', () => {
-    test('throws for unknown "from" currency', () => {
-      expect(() => convert('XYZ', 'USD', 100)).toThrow(UnsupportedCurrencyError);
-    });
-
-    test('throws for unknown "to" currency', () => {
-      expect(() => convert('USD', 'XYZ', 100)).toThrow(UnsupportedCurrencyError);
-    });
-
-    test('error message lists supported currencies', () => {
-      expect(() => convert('XYZ', 'USD', 100)).toThrow(
-        'Unsupported currency: XYZ. Supported currencies: CAD, USD, EUR, GBP, AUD, JPY'
-      );
-    });
-
-    test('does not treat object prototype keys as currencies', () => {
-      expect(() => convert('constructor', 'USD', 100)).toThrow(
-        UnsupportedCurrencyError
-      );
-      expect(() => convert('__proto__', 'USD', 100)).toThrow(
-        UnsupportedCurrencyError
-      );
-    });
-  });
 });
 
 describe('all currency pairs', () => {
-  const amounts = [0.01, 1, 19.99, 100, 250.5, 9999.99];
+    const amounts = [0.01, 1, 19.99, 100, 250.5, 9999.99];
 
-  for (const from of SUPPORTED_CURRENCIES) {
-    for (const to of SUPPORTED_CURRENCIES) {
-      test(`${from} to ${to} uses the correct cross rate`, () => {
-        for (const amount of amounts) {
-          const result = convert(from, to, amount);
-          const expected = Math.round(((amount * RATES[to]) / RATES[from]) * 100) / 100;
-          expect(result.convertedAmount).toBeCloseTo(expected, 2);
+    for (const from of SUPPORTED_CURRENCIES) {
+        for (const to of SUPPORTED_CURRENCIES) {
+            test(`${from} to ${to} uses the correct cross rate`, () => {
+                for (const amount of amounts) {
+                    const result = convert(from, to, amount);
+                    const exact = (amount * RATES[to]) / RATES[from];
+                    // Rounded result must be within half a cent of the exact value
+                    // (the tiny extra allows for floating-point noise on exact half-cents)
+                    expect(Math.abs(result.convertedAmount - exact)).toBeLessThanOrEqual(
+                        0.005 + 1e-9
+                    );
+                }
+            });
+
+            test(`${from} to ${to} round trip stays close`, () => {
+                const there = convert(from, to, 1000);
+                const back = convert(to, from, there.convertedAmount);
+                // Allow more tolerance when converting through a tiny-value currency like JPY
+                expect(Math.abs(back.convertedAmount - 1000)).toBeLessThan(10);
+            });
         }
-      });
-
-      test(`${from} to ${to} round trip stays close`, () => {
-        const there = convert(from, to, 1000);
-        const back = convert(to, from, there.convertedAmount);
-        // Allow more tolerance when converting through a tiny-value currency like JPY
-        expect(Math.abs(back.convertedAmount - 1000)).toBeLessThan(10);
-      });
     }
-  }
 
-  test('uppercase, lowercase and mixed case give identical results', () => {
-    const upper = convert('USD', 'EUR', 123.45);
-    expect(convert('usd', 'eur', 123.45)).toEqual(upper);
-    expect(convert('Usd', 'eUr', 123.45)).toEqual(upper);
-  });
+    test('uppercase, lowercase and mixed case give identical results', () => {
+        const upper = convert('USD', 'EUR', 123.45);
+        expect(convert('usd', 'eur', 123.45)).toEqual(upper);
+        expect(convert('Usd', 'eUr', 123.45)).toEqual(upper);
+    });
+});
+
+describe('half-cent rounding boundaries', () => {
+    test.each([
+        [1.005, 1.01],
+        [1.255, 1.26],
+        [2.675, 2.68],
+        [10.005, 10.01],
+    ])('rounds %s up to %s', (amount, expected) => {
+        expect(convert('CAD', 'CAD', amount).convertedAmount).toBe(expected);
+    });
+
+    test('rounds an exact half-cent product up (0.6875 * 0.72 = 0.495)', () => {
+        expect(convert('CAD', 'USD', 0.6875).convertedAmount).toBe(0.5);
+    });
+
+    test('rounds just below a half-cent down', () => {
+        expect(convert('CAD', 'CAD', 2.674).convertedAmount).toBe(2.67);
+    });
+});
+
+describe('hardcoded reference values', () => {
+    test.each([
+        // from, to, amount, convertedAmount, exchangeRate
+        ['CAD', 'USD', 100, 72, 0.72],
+        ['CAD', 'JPY', 100, 10950, 109.5],
+        ['USD', 'CAD', 100, 138.89, 1.388889],
+        ['EUR', 'CAD', 100, 151.52, 1.515152],
+        ['GBP', 'CAD', 100, 175.44, 1.754386],
+        ['AUD', 'CAD', 100, 91.74, 0.917431],
+        ['JPY', 'CAD', 1000, 9.13, 0.009132],
+        ['USD', 'EUR', 100, 91.67, 0.916667],
+        ['EUR', 'USD', 100, 109.09, 1.090909],
+        ['GBP', 'JPY', 100, 19210.53, 192.105263],
+        ['AUD', 'GBP', 100, 52.29, 0.522936],
+        ['JPY', 'USD', 10000, 65.75, 0.006575],
+        ['USD', 'JPY', 50, 7604.17, 152.083333],
+    ])('%s to %s: %d converts to %d', (from, to, amount, converted, rate) => {
+        const result = convert(from, to, amount);
+        expect(result.convertedAmount).toBe(converted);
+        expect(result.exchangeRate).toBe(rate);
+    });
 });

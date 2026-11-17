@@ -47,7 +47,7 @@ app.use((err, req, res, next) => {
     }
 
     if (process.env.NODE_ENV !== 'test') {
-        console.err(err);
+        console.error(err);
     }
     return res.status(500).json({ error: 'Internal server error' });
 });

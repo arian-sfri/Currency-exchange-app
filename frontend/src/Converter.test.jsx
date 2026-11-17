@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import Converter from './Converter';
@@ -17,7 +17,6 @@ function jsonResponse(body, ok = true, status = 200) {
   return { ok, status, json: async () => body };
 }
 
-// Replaces global fetch. Override either endpoint's behaviour per test.
 function setupFetch({
   currencies = () => Promise.resolve(jsonResponse({ currencies: CURRENCIES })),
   convert = () => Promise.resolve(jsonResponse(SUCCESS)),
@@ -80,7 +79,18 @@ describe('Converter', () => {
   });
 
   test('sends the correct request to POST /convert', async () => {
-    const fetchMock = setupFetch();
+    const fetchMock = setupFetch({
+      convert: () =>
+        Promise.resolve(
+          jsonResponse({
+            from: 'EUR',
+            to: 'JPY',
+            originalAmount: 100,
+            convertedAmount: 16590.91,
+            exchangeRate: 165.909091,
+          })
+        ),
+    });
     const user = userEvent.setup();
     await renderConverter();
 
@@ -89,7 +99,8 @@ describe('Converter', () => {
     await user.type(screen.getByLabelText('Amount'), '100');
     await user.click(screen.getByRole('button', { name: 'Convert' }));
 
-    await screen.findByText('72.00 USD'); // wait for the request to finish
+    expect(await screen.findByText('16590.91 JPY')).toBeInTheDocument();
+    expect(screen.getByText('Rate: 1 EUR = 165.909091 JPY')).toBeInTheDocument();
 
     expect(fetchMock).toHaveBeenCalledWith('/convert', {
       method: 'POST',
@@ -174,6 +185,31 @@ describe('Converter', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Convert' })).toBeEnabled()
     );
+  });
+
+  test('ignores a response that arrives after the inputs changed', async () => {
+    let resolveConvert;
+    setupFetch({
+      convert: () =>
+        new Promise((resolve) => {
+          resolveConvert = resolve;
+        }),
+    });
+    const user = userEvent.setup();
+    await renderConverter();
+
+    await user.type(screen.getByLabelText('Amount'), '100');
+    await user.click(screen.getByRole('button', { name: 'Convert' }));
+    await screen.findByRole('button', { name: 'Converting...' });
+
+    await user.selectOptions(screen.getByLabelText('To'), 'EUR'); // change while pending
+
+    await act(async () => {
+      resolveConvert(jsonResponse(SUCCESS)); // the old response arrives late
+    });
+
+    expect(screen.queryByText('72.00 USD')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Convert' })).toBeEnabled();
   });
 
   test('swap button exchanges the From and To selections', async () => {
