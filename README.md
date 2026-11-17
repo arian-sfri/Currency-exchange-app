@@ -2,9 +2,9 @@
 
 A small REST API that converts monetary amounts between currencies using static exchange rates. Built with Node.js and Express.
 
-An optional React frontend is available as well but the REST API can be ran and tested separately.
+An optional React frontend is available as well but the REST API can be run and tested separately.
 
-## Prequisites
+## Prerequisites
 
 - Node.js 20 or newer (`node -v` to check)
 - npm
@@ -41,6 +41,7 @@ Tests use [Jest](https://jestjs.io/) and [Supertest](https://github.com/ladjs/su
 - `tests/converter.test.js`: conversion logic (all currency pairs, rounding, case handling, unsupported currencies)
 - `tests/validate.test.js`: request validation
 - `tests/api.test.js`: HTTP (status codes, response shapes, errors)
+- `tests/api.errors.test.js`: unexpected-error (500) handling
 
 ### Frontend Setup + Testing
 
@@ -70,7 +71,7 @@ Conversions between any two currencies go through CAD:
 
 ```
 exchangeRate = rates[to] / rates[from]
-convertAmount = amount * exchangeRate
+convertedAmount = amount * exchangeRate
 ```
 
 ## API
@@ -160,12 +161,12 @@ Open http://localhost:5173. The Vite dev server proxies `/convert` and
 
 ## Assumptions and design decisions
 
-- **Rounding:** `convertedAmount` is rounded to 2 decimal places, calculated from the unrounded rate so errors do not compound. `exchangeRate` is rounded to 6 decimal places. JPY is also kept to 2 decimals for consistency.
+- - **Rounding:** `convertedAmount` is rounded to 2 decimal places, calculated from the unrounded rate so errors do not compound. `exchangeRate` is rounded to 6 decimal places. Halves round up, using decimal-shift rounding rather than `Number.EPSILON`, so exact half-cent values (such as 2188.905) round correctly. JPY is also kept to 2 decimals for consistency.
 - **Case-insensitive currency codes:** `usd` and `USD` are equivalent. Codes are returned in uppercase. Surrounding whitespace is ignored.
-- **Strict types:** `amount` must be a JSON number. A string such ass `"100"` is rejected rather than coerced.
-- **Amount limits:** zero is allowed. Negative amounts and anything above 1,000,000,000,000 is rejected.
+- **Strict types:** `amount` must be a JSON number. A string such as `"100"` is rejected rather than coerced.
+- **Amount limits:** zero is allowed. Negative amounts and anything above 1,000,000,000,000 are rejected.
 - **All validation errors are reported together** so a client can fix everything in one request.
-- **Validation and conversion is separate:** `validate.js` checks that the request is well-formed; `converter.js` checks that currencies are supported.
+- **Validation and conversion are separate:** `validate.js` checks that the request is well-formed; `converter.js` checks that currencies are supported.
 - **Static rates:** rates live in `src/rates.js`. No external service or database is used.
 - **No stack traces** are returned to clients on unexpected errors.
 - **Frontend is separate:** `backend/` and `frontend/` have their own `package.json` and share no code.
@@ -173,5 +174,5 @@ Open http://localhost:5173. The Vite dev server proxies `/convert` and
 ## AI Usage
 I used AI tools mainly to speed up repetitive work, in two areas:
 
-- **Tests:** I described the scenarios and edge cases I wanted covered, and the AI generated the test cases. This let me build a comprehensive suite (172 backend tests and 12 frontend tests) in a fraction of the time it would take to write them by hand.
+- **Tests:** I described the scenarios and edge cases I wanted covered, and the AI generated the test cases. This let me build a comprehensive suite (173 backend tests and 12 frontend tests) in a fraction of the time it would take to write them by hand.
 - **Frontend:** I used AI to help build the React frontend, for similar reasons. It saved time on boilerplate, component structure, and styling, so I could focus on making sure the frontend worked correctly with the API.

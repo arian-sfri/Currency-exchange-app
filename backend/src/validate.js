@@ -1,9 +1,12 @@
+// Sanity cap
 const MAX_AMOUNT = 1e12;
 
 function isPlainObject(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+// Checks the shape of a /convert request body
+// Returns an array of error messages so client can fix everything at once
 function validateConvertRequest(body) {
     if (!isPlainObject(body)) {
         return ['Request body must be a JSON object'];

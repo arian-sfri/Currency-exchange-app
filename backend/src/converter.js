@@ -1,5 +1,6 @@
 const { RATES, SUPPORTED_CURRENCIES } = require('./rates');
 
+// Thrown when a currency code isn't in RATES
 class UnsupportedCurrencyError extends Error {
     constructor(currency) {
         super(
@@ -9,6 +10,7 @@ class UnsupportedCurrencyError extends Error {
     }
 }
 
+// Rounds to a fixed number of decimal places, with halves rounding up
 function round(value, decimals) {
   const sign = value < 0 ? -1 : 1;
   const clean = Number(Math.abs(value).toPrecision(15));
@@ -17,6 +19,7 @@ function round(value, decimals) {
   return sign * Number(`${shifted}e${-decimals}`);
 }
 
+// Trims and uppercases a currency code, and verifies it is supported
 function normalizeCurrency(code) {
     const normalized = String(code).trim().toUpperCase();
     if (!Object.hasOwn(RATES, normalized)) {
@@ -25,6 +28,7 @@ function normalizeCurrency(code) {
     return normalized;
 }
 
+// Converts an amount between any two supported currencies
 function convert(from, to, amount){
     const fromCode = normalizeCurrency(from);
     const toCode = normalizeCurrency(to);
@@ -34,7 +38,9 @@ function convert(from, to, amount){
         from: fromCode,
         to: toCode,
         originalAmount: amount,
+        // Calculated from the unrounded rate so rounding error doesn't compound
         convertedAmount: round(amount * rate, 2),
+        // 6 decimals to avoid float noise
         exchangeRate: round(rate, 6),
     };
 }
